@@ -1,29 +1,23 @@
 Vagrant.configure("2") do |config|
+  config.vm.provider "virtualbox"
   config.vm.box = "centos/7"
   config.vagrant.plugins = ["vagrant-vbguest"]
+  # fine for dev boxes but use a private subnet for modelling real envs
+  config.vm.network "private_network", type: "dhcp"
+  # optimization tips on nfs from 
+  # https://blog.theodo.com/2017/07/speed-vagrant-synced-folders/
+  config.vm.synced_folder ".", "/vagrant", type: "nfs", nfs_export: true,
+    mount_options: ['rw', 'vers=3', 'tcp'],
+    linux__nfs_options: ['rw','no_subtree_check','all_squash','async']
 
   config.vm.provider "virtualbox" do |v|
-    v.memory = 1024
+    v.name = "mw-gm"
+    v.memory = 2046
     v.cpus = 2
+    # faster vm on private network using host DNS
+    # https://serverfault.com/a/595010
+    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
   end
-
-# vagrant-vbguest config options from
-# https://github.com/dotless-de/vagrant-vbguest#config-options
-  Vagrant::Config.run do |config|
-    # we will try to autodetect this path. 
-    # However, if we cannot or you have a special one you may pass it like:
-    # config.vbguest.iso_path = "#{ENV['HOME']}/Downloads/VBoxGuestAdditions.iso"
-    # or an URL:
-    # config.vbguest.iso_path = "http://company.server/VirtualBox/%{version}/VBoxGuestAdditions.iso"
-    # or relative to the Vagrantfile:
-    # config.vbguest.iso_path = "../relative/path/to/VBoxGuestAdditions.iso"
-    
-    # set auto_update to false, if you do NOT want to check the correct 
-    # additions version when booting this machine
-    #config.vbguest.auto_update = false
-    
-    # do NOT download the iso file from a webserver
-    #config.vbguest.no_remote = true
-  end 
 
 end    
